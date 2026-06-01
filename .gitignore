@@ -1,0 +1,23 @@
+# API Credentials
+.env
+
+# Local Logs
+trading_bot.log
+*.log
+
+# Virtual Environments
+venv/
+ENV/
+env/
+
+# Python Cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+
+# IDE Configuration
+.vscode/
+.idea/
+.DS_Store
