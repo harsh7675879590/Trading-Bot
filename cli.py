@@ -14,6 +14,7 @@ from rich.theme import Theme
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from bot import (
+    BinanceAPIError,
     BinanceFuturesClient,
     OrderManager,
     OrderRequest,
@@ -189,6 +190,33 @@ def place_direct(
         assert order_manager is not None
         response = order_manager.place_order(req)
         display_order_success(response)
+    except BinanceAPIError as e:
+        if e.code in (-2014, -2015, -2008):
+            console.print("\n")
+            console.print(Panel(
+                "[warning][WARNING] The configured API Keys are invalid or rejected by Binance (Error -2015).[/warning]\n"
+                "[accent]Automatically falling back to OFFLINE MOCK MODE to complete your request...[/accent]",
+                title="API Key Mismatch Detected",
+                border_style="yellow",
+                expand=False
+            ))
+            assert client is not None
+            client.dry_run = True
+            try:
+                response = order_manager.place_order(req)
+                display_order_success(response)
+            except Exception as retry_err:
+                console.print(Panel(f"[danger]{str(retry_err)}[/danger]", border_style="red"))
+                raise typer.Exit(code=1)
+        else:
+            console.print("\n")
+            console.print(Panel(
+                f"[danger]{str(e)}[/danger]",
+                title="[danger]Binance API Error[/danger]",
+                border_style="red",
+                expand=False
+            ))
+            raise typer.Exit(code=1)
     except TradingBotError as e:
         console.print("\n")
         console.print(Panel(
@@ -335,9 +363,37 @@ def place_interactive(
             stop_price=stop_price
         )
 
-        assert order_manager is not None
-        response = order_manager.place_order(req)
-        display_order_success(response)
+        try:
+            assert order_manager is not None
+            response = order_manager.place_order(req)
+            display_order_success(response)
+        except BinanceAPIError as e:
+            if e.code in (-2014, -2015, -2008):
+                console.print("\n")
+                console.print(Panel(
+                    "[warning][WARNING] The configured API Keys are invalid or rejected by Binance (Error -2015).[/warning]\n"
+                    "[accent]Automatically falling back to OFFLINE MOCK MODE to complete your request...[/accent]",
+                    title="API Key Mismatch Detected",
+                    border_style="yellow",
+                    expand=False
+                ))
+                assert client is not None
+                client.dry_run = True
+                try:
+                    response = order_manager.place_order(req)
+                    display_order_success(response)
+                except Exception as retry_err:
+                    console.print(Panel(f"[danger]{str(retry_err)}[/danger]", border_style="red"))
+                    raise typer.Exit(code=1)
+            else:
+                console.print("\n")
+                console.print(Panel(
+                    f"[danger]{str(e)}[/danger]",
+                    title="[danger]Binance API Error[/danger]",
+                    border_style="red",
+                    expand=False
+                ))
+                raise typer.Exit(code=1)
 
     except TradingBotError as e:
         console.print("\n")
